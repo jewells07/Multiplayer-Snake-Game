@@ -4,20 +4,17 @@ It is a Multiplayer snake game that can be play between 2 persons.
 
 ## Setup
 
-Clone this project and Move to the base directory: `cd Multiplayer-Snake`
-
-## Backend
-
-cd into server `cd server`
+Clone this project and Move to the base directory: `cd Multiplayer-Snake` move into server `cd server`
 
 ### `npm install`
 
 Install all dependencies
 
-### `node server.js`
+### `npm dev`
 
-It Runs the Backend
+Runs the app in the development mode.<br />
+Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-## Frontend
+### `npm start`
 
-cd into frontend `cd frontend` and open `index.html` into browser
+Runs the app in the production mode.<br />

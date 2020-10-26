@@ -1,16 +1,30 @@
-const io = require('socket.io')();
-const { initGame, gameLoop, getUpdatedVelocity } = require('./game');
-const { FRAME_RATE } = require('./constants');
-const { makeid } = require('./utils');
+//Node server which will handle socket io connections
+const path = require("path");
+const http = require("http");
+const express = require("express");
+const socketio = require("socket.io");
+
+const app = express();
+const server = http.createServer(app);
+const io = socketio(server);
+
+// This is server side time
+// const moment = require('moment-timezone');
+// const time = moment().tz("Asia/Kolkata").format('h:mm a')
+
+// Set static folder
+app.use(express.static(path.join(__dirname, "../frontend")));
+const { initGame, gameLoop, getUpdatedVelocity } = require("./game");
+const { FRAME_RATE } = require("./constants");
+const { makeid } = require("./utils");
 
 const state = {};
 const clientRooms = {};
 
-io.on('connection', client => {
-
-  client.on('keydown', handleKeydown);
-  client.on('newGame', handleNewGame);
-  client.on('joinGame', handleJoinGame);
+io.on("connection", (client) => {
+  client.on("keydown", handleKeydown);
+  client.on("newGame", handleNewGame);
+  client.on("joinGame", handleJoinGame);
 
   function handleJoinGame(roomName) {
     const room = io.sockets.adapter.rooms[roomName];
@@ -26,10 +40,10 @@ io.on('connection', client => {
     }
 
     if (numClients === 0) {
-      client.emit('unknownCode');
+      client.emit("unknownCode");
       return;
     } else if (numClients > 1) {
-      client.emit('tooManyPlayers');
+      client.emit("tooManyPlayers");
       return;
     }
 
@@ -37,21 +51,21 @@ io.on('connection', client => {
 
     client.join(roomName);
     client.number = 2;
-    client.emit('init', 2);
-    
+    client.emit("init", 2);
+
     startGameInterval(roomName);
   }
 
   function handleNewGame() {
     let roomName = makeid(5);
     clientRooms[client.id] = roomName;
-    client.emit('gameCode', roomName);
+    client.emit("gameCode", roomName);
 
     state[roomName] = initGame();
 
     client.join(roomName);
     client.number = 1;
-    client.emit('init', 1);
+    client.emit("init", 1);
   }
 
   function handleKeydown(keyCode) {
@@ -61,7 +75,7 @@ io.on('connection', client => {
     }
     try {
       keyCode = parseInt(keyCode);
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       return;
     }
@@ -77,9 +91,9 @@ io.on('connection', client => {
 function startGameInterval(roomName) {
   const intervalId = setInterval(() => {
     const winner = gameLoop(state[roomName]);
-    
+
     if (!winner) {
-      emitGameState(roomName, state[roomName])
+      emitGameState(roomName, state[roomName]);
     } else {
       emitGameOver(roomName, winner);
       state[roomName] = null;
@@ -90,13 +104,13 @@ function startGameInterval(roomName) {
 
 function emitGameState(room, gameState) {
   // Send this event to everyone in the room.
-  io.sockets.in(room)
-    .emit('gameState', JSON.stringify(gameState));
+  io.sockets.in(room).emit("gameState", JSON.stringify(gameState));
 }
 
 function emitGameOver(room, winner) {
-  io.sockets.in(room)
-    .emit('gameOver', JSON.stringify({ winner }));
+  io.sockets.in(room).emit("gameOver", JSON.stringify({ winner }));
 }
 
-io.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
